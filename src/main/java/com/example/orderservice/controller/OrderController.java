@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.orderservice.dto.OrderDto;
 import com.example.orderservice.jpa.OrderEntity;
+import com.example.orderservice.messageque.KafkaProducer;
 import com.example.orderservice.service.OrderService;
 import com.example.orderservice.vo.RequestOrder;
 import com.example.orderservice.vo.ResponseOrder;
@@ -27,11 +28,12 @@ public class OrderController {
 
 	Environment env;
 	OrderService orderService;
+	KafkaProducer kafkaProducer;
 	
-	public OrderController(Environment env, OrderService orderService) {
-		// TODO Auto-generated constructor stub
+	public OrderController(Environment env, OrderService orderService, KafkaProducer kafkaProducer) {
 		this.env = env;
 		this.orderService = orderService;
+		this.kafkaProducer = kafkaProducer;
 	}
 	
 	@GetMapping("/health-check")
@@ -50,6 +52,10 @@ public class OrderController {
 		OrderDto createdOrderDto = orderService.createOrder(orderDto);
 		
 		ResponseOrder responseOrder = mapper.map(createdOrderDto, ResponseOrder.class);
+		
+		/* kafka message send*/
+		kafkaProducer.send("example-catalog-topic", createdOrderDto);
+		
 		
 		return ResponseEntity.status(HttpStatus.CREATED).body(responseOrder);
 	}
